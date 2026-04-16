@@ -3,19 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How to Stop Ruminating – Podcast Player</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Generate Audio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0e0e12;
-    --surface: #18181f;
     --card: #1f1f28;
     --accent: #c8a96e;
-    --accent2: #7c9eb2;
     --text: #e8e4dc;
     --muted: #7a7870;
-    --highlight: rgba(200,169,110,0.12);
-    --radius: 16px;
+    --radius: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -24,619 +21,267 @@
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 32px 16px 60px;
+    justify-content: center;
+    padding: 32px 16px;
   }
-  body::before {
-    content: '';
-    position: fixed;
-    top: -200px; left: 50%;
-    transform: translateX(-50%);
-    width: 700px; height: 500px;
-    background: radial-gradient(ellipse, rgba(200,169,110,0.07) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .player-wrap { width: 100%; max-width: 680px; }
-
-  /* ── Key gate ── */
-  #keyGate {
+  .card {
     background: var(--card);
     border-radius: var(--radius);
     border: 1px solid rgba(255,255,255,0.07);
-    padding: 36px 32px;
-    margin-bottom: 24px;
-    animation: fadeUp 0.6s ease both;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 520px;
   }
-  #keyGate h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 20px; font-weight: 700;
-    margin-bottom: 8px;
-  }
-  #keyGate p {
-    font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 20px;
-  }
-  #keyGate a { color: var(--accent2); text-decoration: none; }
-  #keyGate a:hover { text-decoration: underline; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
 
-  .key-input-row { display: flex; gap: 10px; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
 
-  #keyInput {
-    flex: 1;
-    background: var(--surface);
+  input[type=password] {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     color: var(--text);
     border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    font-family: 'DM Sans', monospace;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: inherit;
     outline: none;
+    margin-bottom: 20px;
     transition: border-color 0.2s;
   }
-  #keyInput:focus { border-color: var(--accent); }
-  #keyInput::placeholder { color: var(--muted); }
+  input[type=password]:focus { border-color: var(--accent); }
 
-  #keyBtn {
+  button {
+    width: 100%;
     background: linear-gradient(135deg, var(--accent), #b8923e);
     color: #1a1200;
     border: none;
     border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 600;
     font-family: inherit;
+    cursor: pointer;
     transition: opacity 0.2s, transform 0.15s;
-    white-space: nowrap;
   }
-  #keyBtn:hover { opacity: 0.9; transform: scale(1.02); }
+  button:hover:not(:disabled) { opacity: 0.9; transform: scale(1.01); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-  .key-note {
-    font-size: 11px; color: var(--muted);
-    margin-top: 12px; line-height: 1.6;
-    display: flex; align-items: flex-start; gap: 6px;
+  .progress-wrap {
+    margin-top: 24px;
+    display: none;
   }
-  .key-note-icon { flex-shrink: 0; margin-top: 1px; }
-
-  #keyError {
-    font-size: 12px; color: #e07070;
-    margin-top: 10px; display: none;
-  }
-
-  /* ── Player (hidden until key entered) ── */
-  #playerWrap { display: none; }
-
-  .header { text-align: center; margin-bottom: 32px; animation: fadeDown 0.7s ease both; }
-  .header .tag {
-    display: inline-block;
-    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--accent); border: 1px solid rgba(200,169,110,0.3);
-    border-radius: 40px; padding: 4px 14px; margin-bottom: 16px;
-  }
-  .header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(22px, 5vw, 34px); font-weight: 700; line-height: 1.25; margin-bottom: 8px;
-  }
-  .header .author { font-size: 13px; color: var(--muted); letter-spacing: 0.04em; }
-
-  .cover {
-    width: 100%; height: 160px;
-    background: linear-gradient(135deg, #1a1a25 0%, #252530 50%, #1a1a25 100%);
-    border-radius: var(--radius); margin-bottom: 24px;
-    display: flex; align-items: center; justify-content: center;
-    position: relative; overflow: hidden;
-    animation: fadeUp 0.7s 0.1s ease both;
-  }
-  .cover::before {
-    content: ''; position: absolute; inset: 0;
-    background: repeating-linear-gradient(-45deg, transparent, transparent 18px, rgba(200,169,110,0.04) 18px, rgba(200,169,110,0.04) 19px);
-  }
-  .cover-icon {
-    font-size: 60px; position: relative; z-index: 1;
-    filter: drop-shadow(0 0 20px rgba(200,169,110,0.3));
-    animation: pulse 3s ease-in-out infinite;
-    animation-play-state: paused;
-  }
-  @keyframes pulse {
-    0%,100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(200,169,110,0.3)); }
-    50% { transform: scale(1.06); filter: drop-shadow(0 0 32px rgba(200,169,110,0.5)); }
-  }
-
-  .top-bar {
-    display: flex; gap: 12px; margin-bottom: 20px;
-    animation: fadeUp 0.7s 0.15s ease both;
-  }
-
-  .voice-box {
-    flex: 1;
-    background: var(--card); border-radius: var(--radius);
-    border: 1px solid rgba(255,255,255,0.06);
-    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
-  }
-  .voice-box label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .voice-box select {
-    flex: 1; background: var(--surface); border: 1px solid rgba(255,255,255,0.1);
-    color: var(--text); border-radius: 8px; padding: 5px 8px;
-    font-size: 13px; font-family: inherit; outline: none; cursor: pointer;
-  }
-  .voice-box select:focus { border-color: var(--accent); }
-
-  .key-reset-btn {
-    background: var(--card); border: 1px solid rgba(255,255,255,0.06);
-    border-radius: var(--radius); padding: 12px 16px;
-    color: var(--muted); font-size: 12px; font-family: inherit;
-    cursor: pointer; transition: all 0.2s; white-space: nowrap;
-  }
-  .key-reset-btn:hover { color: var(--accent); border-color: rgba(200,169,110,0.3); }
-
-  .player-card {
-    background: var(--card); border-radius: var(--radius);
-    border: 1px solid rgba(255,255,255,0.06);
-    padding: 28px; margin-bottom: 20px;
-    animation: fadeUp 0.7s 0.2s ease both;
-  }
-  .progress-area { margin-bottom: 20px; }
-  .time-row {
+  .progress-label {
+    font-size: 12px; color: var(--muted);
     display: flex; justify-content: space-between;
-    font-size: 12px; color: var(--muted); margin-bottom: 8px;
-    font-variant-numeric: tabular-nums;
+    margin-bottom: 8px;
   }
   .progress-track {
-    width: 100%; height: 4px; background: rgba(255,255,255,0.08);
-    border-radius: 2px; cursor: pointer; position: relative;
+    width: 100%; height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px; overflow: hidden;
   }
   .progress-fill {
-    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 2px; width: 0%; position: relative; transition: width 0.4s linear;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #7c9eb2);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
   }
-  .progress-fill::after {
-    content: ''; position: absolute; right: -5px; top: 50%;
-    transform: translateY(-50%); width: 12px; height: 12px;
-    background: var(--accent); border-radius: 50%;
-    box-shadow: 0 0 8px rgba(200,169,110,0.5); opacity: 0; transition: opacity 0.2s;
+  .status {
+    font-size: 13px; color: var(--muted);
+    margin-top: 10px; text-align: center;
+    min-height: 20px;
   }
-  .progress-track:hover .progress-fill::after { opacity: 1; }
+  .error { color: #e07070; }
 
-  .controls { display: flex; align-items: center; justify-content: center; gap: 16px; }
-  .btn {
-    background: none; border: none; color: var(--text); cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; border-radius: 50%; padding: 0;
+  .download-wrap {
+    margin-top: 24px;
+    display: none;
+    text-align: center;
   }
-  .btn:hover { color: var(--accent); transform: scale(1.1); }
-  .btn:active { transform: scale(0.95); }
-  .btn-skip { width: 36px; height: 36px; font-size: 18px; }
-  .btn-play {
-    width: 60px; height: 60px;
-    background: linear-gradient(135deg, var(--accent), #b8923e);
-    color: #1a1200; font-size: 22px;
-    box-shadow: 0 0 24px rgba(200,169,110,0.35);
+  .download-btn {
+    display: inline-block;
+    background: rgba(109,191,126,0.15);
+    color: #6dbf7e;
+    border: 1px solid rgba(109,191,126,0.3);
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
   }
-  .btn-play:hover { color: #1a1200; transform: scale(1.06); box-shadow: 0 0 32px rgba(200,169,110,0.5); }
-
-  .vol-row { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
-  .vol-icon { font-size: 14px; color: var(--muted); }
-  input[type=range] {
-    -webkit-appearance: none; flex: 1; height: 3px;
-    background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; cursor: pointer;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 12px; height: 12px;
-    background: var(--accent); border-radius: 50%;
-  }
-
-  .status-bar {
-    background: var(--surface); border-radius: var(--radius);
-    border: 1px solid rgba(255,255,255,0.05);
-    padding: 14px 20px; margin-bottom: 20px;
-    animation: fadeUp 0.7s 0.3s ease both;
-    min-height: 58px; display: flex; align-items: center; gap: 12px;
-  }
-  .status-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--muted); flex-shrink: 0; transition: background 0.3s;
-  }
-  .status-dot.loading { background: var(--accent2); animation: blink 1s infinite; }
-  .status-dot.playing { background: #6dbf7e; animation: blink 1.5s infinite; }
-  .status-dot.error { background: #e07070; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .status-text { font-size: 13px; color: var(--text); line-height: 1.5; flex: 1; }
-  .status-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-  .chapters {
-    background: var(--card); border-radius: var(--radius);
-    border: 1px solid rgba(255,255,255,0.06); overflow: hidden;
-    animation: fadeUp 0.7s 0.4s ease both;
-  }
-  .chapters-header {
-    padding: 14px 20px; font-size: 11px; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--muted);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .chapter-item {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 13px 20px; border-bottom: 1px solid rgba(255,255,255,0.04);
-    cursor: pointer; transition: background 0.2s;
-  }
-  .chapter-item:last-child { border-bottom: none; }
-  .chapter-item:hover { background: rgba(200,169,110,0.06); }
-  .chapter-item.active { background: var(--highlight); }
-  .chapter-num { font-size: 11px; color: var(--accent); min-width: 20px; margin-top: 2px; }
-  .chapter-info { flex: 1; }
-  .chapter-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; margin-bottom: 2px; }
-  .chapter-item.active .chapter-title { color: var(--accent); }
-  .chapter-preview {
-    font-size: 11px; color: var(--muted); line-height: 1.5;
-    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .chapter-badge {
-    font-size: 10px; padding: 2px 8px; border-radius: 20px;
-    margin-top: 3px; flex-shrink: 0; display: none;
-  }
-  .badge-cached { background: rgba(109,191,126,0.15); color: #6dbf7e; }
-  .badge-loading { background: rgba(124,158,178,0.15); color: var(--accent2); }
-  .eq-bars { display: none; align-items: center; gap: 2px; margin-top: 4px; }
-  .bar { width: 3px; background: var(--accent); border-radius: 2px; animation: eq 0.6s ease-in-out infinite alternate; }
-  .bar:nth-child(2) { animation-delay: 0.2s; }
-  .bar:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes eq { from { height: 4px; } to { height: 14px; } }
-
-  .disclaimer {
-    font-size: 11px; color: var(--muted); text-align: center;
-    margin-top: 24px; line-height: 1.6; padding: 0 12px;
-  }
-
-  @keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  .download-btn:hover { background: rgba(109,191,126,0.25); }
+  .download-note { font-size: 11px; color: var(--muted); margin-top: 10px; }
 </style>
 </head>
 <body>
-<div class="player-wrap">
+<div class="card">
+  <h1>🎙 Generate Audio</h1>
+  <p class="sub">
+    Generates the full article as a single MP3 using OpenAI TTS.<br>
+    Voice: <strong style="color:var(--accent)">Nova</strong> · Speed: <strong style="color:var(--accent)">1×</strong>
+  </p>
 
-  <!-- ── API Key Gate ── -->
-  <div id="keyGate">
-    <h2>🔑 Enter your OpenAI API Key</h2>
-    <p>
-      This player uses OpenAI's text-to-speech to narrate the article in a natural voice.<br>
-      Your key is used only in this browser session and is never stored or sent anywhere except directly to OpenAI.<br><br>
-      Get a key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>.
-      The full article costs roughly <strong style="color:var(--accent)">~10 cents</strong> to narrate.
-    </p>
-    <div class="key-input-row">
-      <input type="password" id="keyInput" placeholder="sk-proj-..." autocomplete="off" onkeydown="if(event.key==='Enter') submitKey()" />
-      <button id="keyBtn" onclick="submitKey()">Start Listening →</button>
+  <label>OpenAI API Key</label>
+  <input type="password" id="keyInput" placeholder="sk-proj-..." autocomplete="off" />
+
+  <button id="generateBtn" onclick="generate()">Generate MP3</button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">
+      <span id="progressLabel">Generating…</span>
+      <span id="progressPct">0%</span>
     </div>
-    <div id="keyError"></div>
-    <div class="key-note">
-      <span class="key-note-icon">🔒</span>
-      <span>Your key lives only in memory — closing or refreshing the tab clears it completely. This HTML file contains no credentials.</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
     </div>
+    <div class="status" id="statusText"></div>
   </div>
 
-  <!-- ── Player (shown after key entry) ── -->
-  <div id="playerWrap">
-    <div class="header">
-      <div class="tag">🎙 AI Narrated</div>
-      <h1>How to Stop Ruminating</h1>
-      <div class="author">Dr. Michael J. Greenberg · Rumination-Focused ERP</div>
-    </div>
-
-    <div class="cover">
-      <div class="cover-icon" id="coverIcon">🧠</div>
-    </div>
-
-    <div class="top-bar">
-      <div class="voice-box">
-        <label>🎤 Voice</label>
-        <select id="voiceSelect" onchange="onVoiceChange()">
-          <option value="nova">Nova — warm, female</option>
-          <option value="alloy">Alloy — neutral</option>
-          <option value="echo">Echo — male</option>
-          <option value="fable">Fable — expressive, male</option>
-          <option value="onyx">Onyx — deep, male</option>
-          <option value="shimmer">Shimmer — soft, female</option>
-        </select>
-      </div>
-      <button class="key-reset-btn" onclick="resetKey()">🔑 Change key</button>
-    </div>
-
-    <div class="player-card">
-      <div class="progress-area">
-        <div class="time-row">
-          <span id="currentTime">0:00</span>
-          <span id="totalTime">–:––</span>
-        </div>
-        <div class="progress-track" id="progressTrack">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-      </div>
-      <div class="controls">
-        <button class="btn btn-skip" onclick="prevChapter()">⏮</button>
-        <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶</button>
-        <button class="btn btn-skip" onclick="nextChapter()">⏭</button>
-      </div>
-      <div class="vol-row">
-        <span class="vol-icon">🔈</span>
-        <input type="range" id="volSlider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)">
-        <span class="vol-icon">🔊</span>
-      </div>
-    </div>
-
-    <div class="status-bar">
-      <div class="status-dot" id="statusDot"></div>
-      <div>
-        <div class="status-text" id="statusText">Choose a voice and press ▶ to begin</div>
-        <div class="status-sub" id="statusSub">Audio is generated on demand — first chapter takes ~2s</div>
-      </div>
-    </div>
-
-    <div class="chapters" id="chapterList"></div>
-
-    <div class="disclaimer">
-      This article is for informational purposes only and does not constitute clinical advice<br>
-      or establish a patient–psychologist relationship.
-    </div>
+  <div class="download-wrap" id="downloadWrap">
+    <a id="downloadLink" class="download-btn" download="how-to-stop-ruminating.mp3">⬇ Download MP3</a>
+    <div class="download-note">Open in any audio player or upload to YouTube directly.</div>
   </div>
-
 </div>
+
 <script>
-// ─── Chapters ────────────────────────────────────────────────────
-const chapters = [
-  { title: "Introduction", text: `Please note: Rumination-Focused ERP is a new and evolving approach. Neither this exercise nor the rest of the treatment has been researched, and therefore neither is evidence-based. This article describes the exercise used to teach people how to stop ruminating.\n\nThe exercise starts with the following instructions. Don't ruminate. If there is a problem that you usually ruminate about, your job is to not try to solve that problem. Don't try to push it out of your mind or forget about it. Don't actively try to keep it in mind either. It can be there or not be there — it doesn't matter. Your job is to not try to solve it.` },
-  { title: "How Do You Know If It Worked?", text: `How do you know if it worked? There are two questions used to make sure a person has completely stopped ruminating.\n\nThe first question is: What is your anxiety level, from zero to ten? Anxiety is believed to be a product of rumination. Therefore, if a person has fully stopped ruminating, their anxiety level will be close to zero.\n\nIf it's significantly higher than zero, they are still engaging in some way. This is essentially a multiple choice test. Here's what they might be doing: one — trying to figure something out; two — directing attention or monitoring; three — keeping their guard up; four — pushing away thoughts; five — using mindfulness or bad distraction; six — engaging in self-talk.` },
-  { title: "The Effort Question", text: `But even if anxiety is close to zero, it's important to ask one more question: Did that feel totally easy? How much of an effort were you making, from zero to ten?\n\nRemember that ruminating is doing something, and not ruminating is not doing it. If someone says they're not ruminating but it requires effort, that tells us that they are doing something, which indicates a flaw in their approach.\n\nNot ruminating needs to feel like getting off of a treadmill, not getting onto one. The experience of not ruminating should feel as effortless as lying on your sofa.` },
-  { title: "1. Rumination Proper", text: `Let's take a closer look at each of the multiple choice answers.\n\nNumber one: Trying to figure something out — also called rumination proper. This is pretty self-explanatory. Just keep in mind that this includes not only trying to solve the original problem, but also trying to solve another problem; trying to figure out if you're doing it right; trying to figure out if you'll be able to do it outside of the session; and so on.\n\nAnalytical thinking of all kinds is controllable. Just like you can stop solving a math problem or planning a party, you can stop ruminating.` },
-  { title: "2. Directing Attention", text: `Number two: Directing attention or monitoring. This includes someone who is directing attention towards the problem even if they aren't really analyzing it; someone who is directing attention towards their thoughts to see if they're ruminating; and someone who is directing attention towards an emotion or a feeling in their body.\n\nPeople often think that in order to stop directing attention towards one thing, they have to direct it towards something else. These people need to be told: Directing attention is like mentally holding onto something. You don't need to grab onto something else. Just let go.` },
-  { title: "3. Keeping Your Guard Up", text: `Number three: Keeping your guard up. This is like bracing yourself mentally. It's sort of like directing attention towards the general possibility of threat — like a mental radar.\n\nSometimes a person is bracing themselves against rumination. Such a person needs to understand that rumination isn't something that happens to them; it's something they do. And as long as they don't do it, it won't happen. Metaphorically, they are leaning up against a locked door.\n\nWhen someone says their anxiety is about zero but it doesn't feel easy, it's likely they have their guard up.` },
-  { title: "4. Pushing Away Thoughts", text: `Number four: Pushing away thoughts — trying not to let thoughts enter awareness. Thought-suppression plays a far smaller role in OCD than people think it does, but sometimes it does make an appearance.\n\nIt's crucial to distinguish between something being in awareness, and directing attention towards it. The former is not controllable, and trying to control it will actually backfire. The latter is controllable.\n\nEven if a problem remains in awareness, if a person completely lets go of trying to solve it and of directing attention towards it, their anxiety will still come down to about zero.\n\nThe language used most frequently in these cases is simple: It's there. Don't engage.` },
-  { title: "5. Mindfulness & Bad Distraction", text: `Number five: Using mindfulness or bad distraction. Distraction is bad if it is an attempt to push something out of awareness, or an attempt to stop paying attention to one thing by paying attention to something else.\n\nYou can't force something out of awareness. Trying to do so will actually keep it in awareness, because in the process of trying to force it out, you are directing attention towards it.\n\nYou don't need to direct your attention towards one thing to stop directing it towards another. Directing attention is like mentally holding onto something — you can let go without grabbing onto something else.` },
-  { title: "6. Self-Talk", text: `Number six: Engaging in self-talk. Whether you talk to yourself out loud or just in your head, everyone engages in self-talk sometimes. But in the context of not ruminating, the problem with self-talk is twofold.\n\nFirst, it keeps you engaged with the problem. Second, it is doing something — and we want people to understand that not ruminating is about not doing something.\n\nFortunately, not talking in your head is as easy as not talking out loud. So once a person identifies this issue, they are usually able to resolve it easily.` },
-  { title: "Practice Scenarios", text: `Let's look at some things people commonly say during this exercise.\n\n"I keep trying to think about other things but it's still there." Response: Your job isn't to make it go away. Your job is to let it be there without directing attention towards it or trying to solve it. Just let it be there, and don't engage.\n\n"I keep trying to stay present but my mind keeps wandering." Response: You don't need to be mindful or present. You can think about whatever you want. Your only job is not to solve that problem or direct your attention towards it.\n\n"I don't know what to do instead." Response: You can do literally anything. I'm asking you to get off of the treadmill. Do anything you want, as long as you stay off the treadmill.` },
-  { title: "More Practice Scenarios", text: `"It keeps popping into my mind." Response: Popping in? You must be trying to push it out. Your job isn't to get rid of it. It's to stop directing attention towards it. Just let it be there and don't engage.\n\n"I keep thinking about whether I'm going to be able to keep this up." Response: Trying to figure that out is also rumination. Treat that the same as the original problem. Don't engage with it.\n\n"Now I'm just worrying about something else." Response: You can choose what you think about. Thoughts occur to you, but you decide if you want to engage with them or not. The same way that you're choosing not to engage with the original problem, you can choose not to engage with these other ones.` },
-  { title: "Feelings & Conclusion", text: `On feelings: Feeling emotional doesn't indicate rumination. But if a person seems to be paying attention to how they are feeling, the guidance is: That's okay. I'm not asking you to control your feelings, just your thoughts. You can feel whatever comes up. Just make sure you're not directing attention towards the feeling or trying to figure anything out about it. Let yourself feel whatever you feel, but don't engage with it mentally.\n\nIn conclusion: Knowing how to stop ruminating is not only foundational to the treatment of OCD and other anxiety disorders, but also a basic life skill that every person should be taught. We humans don't realize how much control we have over certain parts of what goes on in our minds, or where the line is between what we can and can't control. Finding out can be life-changing.` }
+// Full article as chunks — OpenAI TTS max input is 4096 chars, so we split into sections
+const chunks = [
+  `Please note: Rumination-Focused ERP is a new and evolving approach. Neither this exercise nor the rest of the treatment has been researched, and therefore neither is evidence-based. This article describes the exercise used to teach people how to stop ruminating.
+
+The exercise starts with the following instructions. Don't ruminate. If there is a problem that you usually ruminate about, your job is to not try to solve that problem. Don't try to push it out of your mind or forget about it. Don't actively try to keep it in mind either. It can be there or not be there — it doesn't matter. Your job is to not try to solve it.`,
+
+  `How do you know if it worked? There are two questions used to make sure a person has completely stopped ruminating.
+
+The first question is: What is your anxiety level, from zero to ten? Anxiety is believed to be a product of rumination. Therefore, if a person has fully stopped ruminating, their anxiety level will be close to zero. While it might not be exactly zero, it shouldn't be much higher. If it's significantly higher than zero, they are still engaging in some way.
+
+This is essentially a multiple choice test. Here's what they might be doing: one — trying to figure something out, also called rumination proper; two — directing attention or monitoring; three — keeping their guard up; four — pushing away thoughts, trying not to let thoughts enter awareness; five — using mindfulness or bad distraction; six — engaging in self-talk.
+
+A person might be doing a combination of several of these, and it may therefore be necessary to repeat this exercise several times, identifying issues one by one until the anxiety level comes down to about zero.`,
+
+  `But even if anxiety is close to zero, it's important to ask one more question: Did that feel totally easy? How much of an effort were you making, from zero to ten?
+
+Remember that ruminating is doing something, and not ruminating is not doing it. If someone says they're not ruminating but it requires effort, that tells us that they are doing something, which indicates a flaw in their approach. Not ruminating needs to feel like getting off of a treadmill, not getting onto one. The experience of not ruminating should feel as effortless as lying on your sofa.
+
+When not ruminating feels easy and requires no effort, the exercise is working. All we mean is that when you're not ruminating, it shouldn't feel like you're making an effort.`,
+
+  `Now let's take a closer look at each of the multiple choice answers.
+
+Number one: Trying to figure something out — rumination proper. This is pretty self-explanatory. Just keep in mind that this includes not only trying to solve the original problem, but also trying to solve another problem; trying to figure out if you're doing it right; trying to figure out if you'll be able to do it outside of the session; and so on. Analytical thinking of all kinds is controllable. Just like you can stop solving a math problem or planning a party, you can stop ruminating.
+
+Number two: Directing attention or monitoring. This includes someone who is directing attention towards the problem even if they aren't really analyzing it; someone who is directing attention towards their thoughts to see if they're ruminating; and someone who is directing attention towards an emotion or a feeling in their body. People often think that in order to stop directing attention towards one thing, they have to direct it towards something else. These people need to be told: directing attention is like mentally holding onto something. You don't need to grab onto something else — just let go.`,
+
+  `Number three: Keeping your guard up. This is like bracing yourself mentally — sort of like directing attention towards the general possibility of threat, or like a mental radar. Once someone realizes they're doing this, they can typically stop.
+
+Sometimes a person is bracing themselves against rumination. Such a person needs to understand that rumination isn't something that happens to them; it's something they do. And as long as they don't do it, it won't happen. Metaphorically, they are leaning up against a locked door. You can let go.
+
+Number four: Pushing away thoughts — trying not to let thoughts enter awareness. It's crucial to distinguish between something being in awareness and directing attention towards it. The former is not controllable, and trying to control it will backfire — because in the process of trying to keep something out of awareness, you are directing attention towards it, which keeps it in awareness. The latter is controllable. Even if a problem remains in awareness, if a person completely lets go of trying to solve it and of directing attention towards it, their anxiety will still come down to about zero. The language used most frequently in these cases is: it's there — don't engage.`,
+
+  `Number five: Using mindfulness or bad distraction. Many people who struggle with rumination have tried to use mindfulness or distraction to solve this problem. Evidently these strategies haven't worked or they wouldn't be seeking help.
+
+Distraction is bad if it is an attempt to push something out of awareness, or an attempt to stop paying attention to one thing by paying attention to something else. You can't force something out of awareness — trying to force it out will actually keep it in awareness. And you don't need to direct your attention towards one thing to stop directing it towards another. You can just let go.
+
+Number six: Engaging in self-talk. Whether you talk to yourself out loud or just in your head, everyone engages in self-talk sometimes. But in the context of not ruminating, the problem with self-talk is twofold: first, it keeps you engaged with the problem; second, it is doing something — and we want people to understand that not ruminating is about not doing something. Fortunately, not talking in your head is as easy as not talking out loud.`,
+
+  `Let's look at some things people commonly say during this exercise, and what to tell them.
+
+"I keep trying to think about other things but it's still there." Your job isn't to make it go away. Your job is to let it be there without directing attention towards it or trying to solve it. You also don't need to actively distract yourself. Just let it be there, and don't engage.
+
+"I keep trying to stay present and mindful but my mind keeps wandering." You don't need to be mindful or present. You can think about whatever you want, or let your mind wander. Your only job is not to solve that problem or direct your attention towards it. Ruminating is like trying to solve a math problem. If I asked you to stop solving a math problem, you wouldn't need to do mindfulness — you would just stop.
+
+"I don't know what to do instead." You can do literally anything. I'm asking you to get off of the treadmill, and you're asking me what to do instead. My answer is: do anything you want, as long as you stay off the treadmill.`,
+
+  `"It keeps popping into my mind." Popping in? You must be trying to push it out. Your job isn't to get rid of it — it's to stop directing attention towards it. Just let it be there and don't engage. It also sounds like you might be watching the door to see who comes in. Try to let go of doing that.
+
+"I keep thinking about whether I'm going to be able to keep this up" or "I keep worrying that I'm not doing this right." Trying to figure that out is also rumination. If the thought occurs to you that you might not be able to keep this up, treat that the same as the original problem: don't engage with it.
+
+"Now I'm just worrying about something else." The point of this exercise is that you can choose what you think about. Thoughts occur to you, but you decide if you want to engage with them or not. The same way that you're choosing not to engage with the original problem, you can choose not to engage with these other ones.
+
+"I'm really not trying to figure it out but I'm still anxious about it." This person is most likely still directing attention. Even though you're not trying to solve it, you might still be directing your attention towards it. Directing attention is also controllable. Try to let it be there and just not engage.`,
+
+  `"I feel sad" — or any other emotion. Feeling emotional doesn't indicate rumination. We would want to convey that the feeling itself is not a problem, but directing attention towards it and ruminating about it are. The guidance is: that's okay — I'm not asking you to control your feelings, just your thoughts. You can feel whatever comes up. Just make sure you're not directing attention towards the feeling or trying to figure anything out about it. Let yourself feel whatever you feel, but don't engage with it mentally.
+
+In conclusion: knowing how to stop ruminating is not only foundational to the treatment of OCD and other anxiety disorders, but also a basic life skill that every person should be taught. We humans don't realize how much control we have over certain parts of what goes on in our minds, or where the line is between what we can and can't control. Finding out can be life-changing.`
 ];
 
-// ─── State ───────────────────────────────────────────────────────
-let API_KEY = '';
-let audioCache = {};
-let currentChapter = 0;
-let isPlaying = false;
-let currentAudio = null;
-let volume = 1;
-let currentVoice = 'nova';
-let chapterDurations = new Array(chapters.length).fill(0);
-let chapterStartTimes = new Array(chapters.length).fill(0);
-let totalDuration = 0;
-
-// ─── Key gate ────────────────────────────────────────────────────
-function submitKey() {
-  const val = document.getElementById('keyInput').value.trim();
-  const errEl = document.getElementById('keyError');
-  if (!val.startsWith('sk-')) {
-    errEl.textContent = 'That doesn\'t look like a valid OpenAI key (should start with sk-).';
-    errEl.style.display = 'block';
-    return;
-  }
-  errEl.style.display = 'none';
-  API_KEY = val;
-  document.getElementById('keyInput').value = '';
-  document.getElementById('keyGate').style.display = 'none';
-  document.getElementById('playerWrap').style.display = 'block';
-  buildChapterList();
-}
-
-function resetKey() {
-  API_KEY = '';
-  audioCache = {};
-  isPlaying = false;
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  document.getElementById('playerWrap').style.display = 'none';
-  document.getElementById('keyGate').style.display = 'block';
-  document.getElementById('keyInput').value = '';
-}
-
-// ─── UI helpers ──────────────────────────────────────────────────
-function setStatus(dot, text, sub) {
-  document.getElementById('statusDot').className = 'status-dot ' + (dot || '');
-  document.getElementById('statusText').textContent = text;
-  document.getElementById('statusSub').textContent = sub || '';
-}
-
-function fmtTime(s) {
-  if (!s || isNaN(s) || s <= 0) return '0:00';
-  s = Math.round(s);
-  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-}
-
-function buildChapterList() {
-  const list = document.getElementById('chapterList');
-  list.innerHTML = '<div class="chapters-header">Sections</div>';
-  chapters.forEach((ch, i) => {
-    const div = document.createElement('div');
-    div.className = 'chapter-item';
-    div.id = `ch-${i}`;
-    div.onclick = () => jumpToChapter(i);
-    const preview = ch.text.replace(/\n/g, ' ').substring(0, 80) + '…';
-    div.innerHTML = `
-      <div class="chapter-num">${String(i+1).padStart(2,'0')}</div>
-      <div class="chapter-info">
-        <div class="chapter-title">${ch.title}</div>
-        <div class="chapter-preview">${preview}</div>
-      </div>
-      <span class="chapter-badge" id="badge-${i}"></span>
-      <div class="eq-bars" id="eq-${i}">
-        <div class="bar" style="height:6px"></div>
-        <div class="bar" style="height:10px"></div>
-        <div class="bar" style="height:4px"></div>
-      </div>`;
-    list.appendChild(div);
-  });
-}
-
-function setActiveChapter(i) {
-  document.querySelectorAll('.chapter-item').forEach((el, j) => {
-    el.classList.toggle('active', j === i);
-    const eq = document.getElementById(`eq-${j}`);
-    if (eq) eq.style.display = (j === i && isPlaying) ? 'flex' : 'none';
-  });
-}
-
-function setBadge(i, state) {
-  const b = document.getElementById(`badge-${i}`);
-  if (!b) return;
-  if (state === 'cached') { b.textContent = '✓ ready'; b.className = 'chapter-badge badge-cached'; b.style.display = 'inline-block'; }
-  else if (state === 'loading') { b.textContent = '⟳ loading'; b.className = 'chapter-badge badge-loading'; b.style.display = 'inline-block'; }
-  else { b.style.display = 'none'; }
-}
-
-function rebuildTimings() {
-  let t = 0;
-  for (let i = 0; i < chapters.length; i++) {
-    chapterStartTimes[i] = t;
-    t += chapterDurations[i] || 0;
-  }
-  totalDuration = t;
-  if (totalDuration > 0) document.getElementById('totalTime').textContent = fmtTime(totalDuration);
-}
-
-function updateProgress() {
-  if (!currentAudio) return;
-  const offset = chapterStartTimes[currentChapter] || 0;
-  const now = offset + (currentAudio.currentTime || 0);
-  if (totalDuration > 0) document.getElementById('progressFill').style.width = Math.min(100, (now / totalDuration) * 100) + '%';
-  document.getElementById('currentTime').textContent = fmtTime(now);
-}
-
-// ─── TTS ─────────────────────────────────────────────────────────
-async function fetchAudio(chIdx) {
-  const voice = currentVoice;
-  if (!audioCache[voice]) audioCache[voice] = {};
-  if (audioCache[voice][chIdx]) return audioCache[voice][chIdx];
-
-  setBadge(chIdx, 'loading');
-
-  const resp = await fetch('https://api.openai.com/v1/audio/speech', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'tts-1', voice, input: chapters[chIdx].text, speed: 1.0 })
-  });
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    setBadge(chIdx, 'none');
-    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-  }
-
-  const blob = await resp.blob();
-  const url = URL.createObjectURL(blob);
-  audioCache[voice][chIdx] = url;
-  setBadge(chIdx, 'cached');
-  return url;
-}
-
-async function prefetchNext(chIdx) {
-  if (chIdx + 1 < chapters.length) { try { await fetchAudio(chIdx + 1); } catch(_) {} }
-}
-
-// ─── Playback ────────────────────────────────────────────────────
-async function playChapter(chIdx) {
-  if (currentAudio) { currentAudio.pause(); currentAudio.src = ''; currentAudio = null; }
-
-  currentChapter = chIdx;
-  isPlaying = true;
-  setActiveChapter(chIdx);
-  document.getElementById('playBtn').textContent = '⏸';
-  document.getElementById('coverIcon').style.animationPlayState = 'running';
-  setStatus('loading', `Loading chapter ${chIdx + 1} of ${chapters.length}…`, chapters[chIdx].title);
-
-  let url;
-  try {
-    url = await fetchAudio(chIdx);
-  } catch(e) {
-    setStatus('error', 'Could not load audio', e.message);
-    isPlaying = false;
-    document.getElementById('playBtn').textContent = '▶';
-    document.getElementById('coverIcon').style.animationPlayState = 'paused';
-    setActiveChapter(-1);
+async function generate() {
+  const key = document.getElementById('keyInput').value.trim();
+  if (!key.startsWith('sk-')) {
+    alert('Please enter a valid OpenAI API key (starts with sk-)');
     return;
   }
 
-  const audio = new Audio(url);
-  audio.volume = volume;
-  currentAudio = audio;
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
 
-  audio.addEventListener('loadedmetadata', () => {
-    chapterDurations[chIdx] = audio.duration;
-    rebuildTimings();
-  });
+  const progressWrap = document.getElementById('progressWrap');
+  const downloadWrap = document.getElementById('downloadWrap');
+  progressWrap.style.display = 'block';
+  downloadWrap.style.display = 'none';
 
-  audio.addEventListener('timeupdate', updateProgress);
+  const audioBlobs = [];
 
-  audio.addEventListener('ended', () => {
-    if (chIdx + 1 < chapters.length) {
-      playChapter(chIdx + 1);
-    } else {
-      isPlaying = false;
-      document.getElementById('playBtn').textContent = '▶';
-      document.getElementById('coverIcon').style.animationPlayState = 'paused';
-      setActiveChapter(-1);
-      setStatus('', 'Finished — all chapters complete', '');
+  for (let i = 0; i < chunks.length; i++) {
+    const pct = Math.round((i / chunks.length) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressLabel').textContent = `Generating part ${i + 1} of ${chunks.length}…`;
+    document.getElementById('statusText').textContent = chunks[i].substring(0, 60) + '…';
+
+    try {
+      const resp = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'tts-1',
+          voice: 'nova',
+          input: chunks[i],
+          speed: 1.0
+        })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+      }
+
+      const blob = await resp.blob();
+      audioBlobs.push(blob);
+
+    } catch(e) {
+      document.getElementById('statusText').innerHTML = `<span class="error">Error on part ${i+1}: ${e.message}</span>`;
+      btn.disabled = false;
+      btn.textContent = 'Retry';
+      return;
     }
-  });
-
-  audio.addEventListener('error', () => {
-    setStatus('error', 'Playback error', 'Try again or pick a different chapter');
-    isPlaying = false;
-    document.getElementById('playBtn').textContent = '▶';
-    document.getElementById('coverIcon').style.animationPlayState = 'paused';
-  });
-
-  setStatus('playing', `Playing: ${chapters[chIdx].title}`, `Chapter ${chIdx + 1} of ${chapters.length}`);
-  audio.play();
-  prefetchNext(chIdx);
-}
-
-function togglePlay() {
-  if (!isPlaying) {
-    if (currentAudio && currentAudio.paused && currentAudio.src) {
-      currentAudio.play();
-      isPlaying = true;
-      document.getElementById('playBtn').textContent = '⏸';
-      document.getElementById('coverIcon').style.animationPlayState = 'running';
-      setActiveChapter(currentChapter);
-      setStatus('playing', `Playing: ${chapters[currentChapter].title}`, `Chapter ${currentChapter + 1} of ${chapters.length}`);
-    } else {
-      playChapter(currentChapter);
-    }
-  } else {
-    if (currentAudio) currentAudio.pause();
-    isPlaying = false;
-    document.getElementById('playBtn').textContent = '▶';
-    document.getElementById('coverIcon').style.animationPlayState = 'paused';
-    setActiveChapter(-1);
-    setStatus('', 'Paused', chapters[currentChapter].title);
   }
+
+  // Combine all blobs into one MP3 file
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressPct').textContent = '100%';
+  document.getElementById('progressLabel').textContent = 'Done!';
+  document.getElementById('statusText').textContent = 'Combining audio parts…';
+
+  const combined = new Blob(audioBlobs, { type: 'audio/mpeg' });
+  const url = URL.createObjectURL(combined);
+
+  document.getElementById('downloadLink').href = url;
+  downloadWrap.style.display = 'block';
+  document.getElementById('statusText').textContent = '';
+
+  btn.disabled = false;
+  btn.textContent = 'Regenerate';
 }
-
-function jumpToChapter(i) { currentChapter = i; playChapter(i); }
-function prevChapter() { playChapter(Math.max(0, currentChapter - 1)); }
-function nextChapter() { playChapter(Math.min(chapters.length - 1, currentChapter + 1)); }
-function setVolume(v) { volume = parseFloat(v); if (currentAudio) currentAudio.volume = volume; }
-
-function onVoiceChange() {
-  currentVoice = document.getElementById('voiceSelect').value;
-  chapters.forEach((_, i) => setBadge(i, 'none'));
-  if (isPlaying) playChapter(currentChapter);
-}
-
-document.getElementById('progressTrack').addEventListener('click', function(e) {
-  if (totalDuration === 0) return;
-  const pct = (e.clientX - this.getBoundingClientRect().left) / this.offsetWidth;
-  const target = pct * totalDuration;
-  let ch = 0;
-  for (let i = 0; i < chapterStartTimes.length; i++) { if (chapterStartTimes[i] <= target) ch = i; }
-  playChapter(ch);
-});
 </script>
 </body>
 </html>
